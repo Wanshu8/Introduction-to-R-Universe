@@ -1,0 +1,151 @@
+---
+title: "Course2-1"
+output: html_document
+date: "2024-06-14"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars, echo=FALSE}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE, fig.width=6, fig.height=3, fig.cap="Title of figure", fig.align='left'}
+plot(pressure)
+
+plot(cars$speed)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r, echo=FALSE, include=TRUE, eval=TRUE}
+# create an object dataframe example `dfex` and assign to it the .sav file `sample.sav` that was introduced previously
+dfex<-haven::read_sav("sample.sav")
+
+# create an object movies metadata `dfmv` and assign to it the .xlsx file `movies.xlsx`
+# note the different paths to these files
+# note that we specify which sheet to read too; here only sheet 1 is imported
+dfmv<-readxl::read_excel("movies.xlsx",1)
+
+# next, we check if the source material was imported successfully by observing the first lines in the tables
+head(dfex)
+```
+
+```{r}
+r <- getOption("repos")
+r["CRAN"] <-"https://cloud.r-project.org/"
+options(repos=r)
+```
+
+```{r}
+pacman::p_load(tidyverse,readxl,haven,sjlabelled, kableExtra)
+# note: this exact code chunk might end up looking differently in the short book
+# this is becauase i'd install packages as needed
+```
+
+# Plain text vs. live text
+
+This is an example of how automatization can be implemented in the work flow. My list of movies include `r nrow(dfmv)` entries. The title of those movies are `r dfmv$Movie`. Is there a movie that I actually don't like on that list, well, the answer is that I dislike exactly `r dfmv %>% filter(Like %in% c("No","no","NO")) %>% nrow()` movies on that list. Is there a movie that I actually like on that list, well, the answer is that I like exactly `r dfmv %>% filter(Like %in% c("Yes","yes","YES")) %>% nrow()` movies on that list.
+
+```{r}
+# we remove all the labels using the package sjlabelled and mutate
+# as factors columns gen and res
+# this step makes it easier later on to work with plots
+# note that it is not a necessary step in general but only for the sake of 
+# simplicity here
+dfex<-dfex %>% sjlabelled::remove_all_labels() %>% 
+  mutate(gen=factor(gen),
+         res=factor(res))
+
+# subsamples 15 study participants at random
+tmpdf1<-sample_n(dfex,15)
+# subsample 60 study participants at random
+tmpdf2<-sample_n(dfex,60)
+```
+
+```{r}
+haven::write_sav(tmpdf1,"tmpdf1.sav")
+haven::write_sav(tmpdf2,"tmpdf2.sav")
+```
+
+```{r}
+# import dataset into one object and then subject this object to the ggplot code
+
+# 1 - imports dataset into object tempdf
+tempdf<-haven::read_sav("tmpdf1.sav") %>% 
+  sjlabelled::remove_all_labels() %>% 
+  mutate(gen=factor(gen),
+         res=factor(res))
+
+# 2 - applies the ggplot to the dataset
+ggplot(tempdf, aes(x=gen, y=wom_warm)) + 
+  labs(x="Gender",
+       y="Stereotype of warmth") +
+  geom_boxplot() + 
+  theme_light()
+
+ggplot(tempdf, aes(x=gen, y=wom_comp)) + 
+  labs(x="Gender",
+       y="Stereotype of competence") + 
+  geom_boxplot() + 
+  theme_light()
+
+
+# 3 - for illustration purposes, repeat step 1 with each 
+# of the three datasets (tmpdf1,tmpdf2 and dfex) 
+# making sure they are assigned into the same object tempdf. 
+# As long as the ggplot code is applied to a dataset with the same structure
+# and variable labels the output will be updated automatically.
+```
+
+```{r}
+library(knitr)
+dfmv %>% knitr::kable(caption="Simple table using knitr::kable()",format = "pipe")
+```
+
+```{r}
+# does some data manipulation to retrieve the required information
+tmptbl<-dfmv %>% 
+  filter(Actor %in% c("Keanu Reeves", "Alec Baldwin", "Arnold Schwarzenegger"))
+
+# creates an empty table holder that is our summary table that we'd
+# want to include in the final output document
+extbl<-tibble(
+  
+  like=tmptbl[ tmptbl$Grade >= 7 & tmptbl$Like %in% c("Yes","No"), ]$Like,
+  name=tmptbl[ tmptbl$Grade >= 7 & tmptbl$Like %in% c("Yes","No"), ]$Actor,
+  movie=tmptbl[ tmptbl$Grade >= 7 & tmptbl$Like %in% c("Yes","No"), ]$Movie,
+  wiki=tmptbl[ tmptbl$Grade >= 7 & tmptbl$Like %in% c("Yes","No"), ]$Wikilink
+  
+)
+```
+
+```{r}
+extbl %>% knitr::kable(caption="Movies graded 7 or more from liked and least like actors", format="pipe")
+```
+
+```{r}
+# Search for the row containing "Emilia Clarke"
+search_keyword <- "Emilia Clarke"
+matched_row <- dfmv[apply(dfmv, 1, function(row) length(agrep(search_keyword, row["Actor"], ignore.case = TRUE)) > 0), ]
+
+# Display the matched row using knitr::kable()
+kable(matched_row)
+```
+
+```{r}
+print(matched_row)
+```
+
