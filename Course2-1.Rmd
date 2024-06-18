@@ -32,6 +32,8 @@ Note that the `echo = FALSE` parameter was added to the code chunk to prevent pr
 
 ```{r, echo=FALSE, include=TRUE, eval=TRUE}
 # create an object dataframe example `dfex` and assign to it the .sav file `sample.sav` that was introduced previously
+### Adrian comments, June 18th 2024
+### sample.sav is not available which means that I cannot reproduce your code
 dfex<-haven::read_sav("sample.sav")
 
 # create an object movies metadata `dfmv` and assign to it the .xlsx file `movies.xlsx`
